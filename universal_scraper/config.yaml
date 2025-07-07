@@ -1,5 +1,5 @@
 name: "Universal Scraper with Telegram"
-version: "1.0.4"
+version: "1.0.5"
 slug: "universal_scraper"
 description: "Universal scraper with Telegram notifications for Home Assistant"
 url: "https://github.com/rtenklooster/Universal-scraper-with-telegram-notifications"

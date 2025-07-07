@@ -1,6 +1,6 @@
 {
   "name": "universal-scraper-addon",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Universal scraper with Telegram notifications for Home Assistant",
   "main": "dist/index.js",
   "scripts": {

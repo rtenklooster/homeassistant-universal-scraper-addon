@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.5
+
+- **REBUILD FIX:** Force container rebuild to eliminate cached old versions
+- Added build-time cache buster to Dockerfile to prevent old code execution
+- Fixed persistent issues with old container versions running outdated scripts
+- Ensured run.sh script is properly committed and not empty
+- Force Home Assistant to rebuild container from scratch
+
 ## 1.0.4
 
 - **CRITICAL FIX:** Fixed JavaScript syntax error in server.js causing container crashes

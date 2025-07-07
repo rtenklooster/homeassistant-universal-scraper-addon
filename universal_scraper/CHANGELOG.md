@@ -1,5 +1,30 @@
 # Changelog
 
+## 1.0.7
+
+**🚀 MAJOR UPDATE: Complete Project Integration**
+
+- **COMPLETE REWRITE:** Now downloads and runs the actual [Universal Scraper with Telegram Notifications](https://github.com/rtenklooster/Universal-scraper-with-telegram-notifications) project
+- **FULL REACT FRONTEND:** Complete Material-UI React application with all original features
+- **TYPESCRIPT BACKEND:** Full Express API server with TypeScript support
+- **ALL SCRAPERS INCLUDED:** Lidl, Marktplaats, Vinted scrapers with full functionality
+- **TELEGRAM BOT:** Interactive Telegram bot with search commands and user management
+- **PRODUCT MANAGEMENT:** Complete product search, filtering, and notification system
+- **USER SYSTEM:** Multi-user support with admin privileges and token management
+- **REAL-TIME UPDATES:** Live scraping status and real-time notifications
+- **PROFESSIONAL UI:** Complete rewrite from simple dashboard to full-featured application
+- **PROJECT AUTHENTICITY:** Now runs the genuine project instead of a simplified version
+- **AUTO-UPDATES:** Downloads latest project version on container start
+- **BUILD SYSTEM:** Full npm build process with TypeScript compilation
+- **DATABASE MIGRATION:** Automatic database setup and migration
+- **ERROR HANDLING:** Comprehensive error handling and startup validation
+
+**Breaking Changes:**
+- Replaced simple web dashboard with complete React application
+- Default scrape interval changed from 1 to 60 minutes (more reasonable)
+- Requires Telegram bot token (mandatory for core functionality)
+- Container now clones project from GitHub on startup
+
 ## 1.0.6
 
 - **NEW FEATURE:** Added `force_db_download` option to always download database from Azure, even if it exists locally

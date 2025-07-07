@@ -6,14 +6,33 @@ Universal web scraper with Telegram notifications for Home Assistant.
 
 ## About
 
-This add-on allows you to scrape various websites and receive notifications through Telegram. It supports multiple retailers and can be configured to monitor product availability and price changes.
+This add-on runs the complete [Universal Scraper with Telegram Notifications](https://github.com/rtenklooster/Universal-scraper-with-telegram-notifications) project inside Home Assistant. It downloads the latest version of the project and runs both the backend API server and React frontend interface.
 
 **✨ Features:**
-- 🖥️ **Built-in Web Dashboard** - Accessible directly in Home Assistant sidebar
-- 📱 **Telegram Notifications** - Real-time alerts for scraping results  
+- �️ **Multi-Retailer Support** - Scrapes Lidl, Marktplaats, Vinted and more
+- 🌐 **Complete Web Interface** - Full React frontend with Material-UI design  
+- 📱 **Telegram Bot Integration** - Interactive bot with search commands
+- 📊 **Product Management** - Query management, notifications, user system
 - ☁️ **Azure Blob Storage Sync** - Automatic database backup and sync
-- 🗄️ **Multiple Database Types** - SQLite and MSSQL support
+- 🗄️ **Multiple Database Types** - SQLite and Azure SQL support
 - 🏗️ **Multi-Architecture** - Runs on all Home Assistant platforms
+
+## What's New in v1.0.7
+
+**🚀 Complete Project Integration:**
+- Now downloads and runs the actual Universal Scraper project from GitHub
+- Full React frontend with all original features
+- Complete TypeScript backend with Express API
+- All original scrapers (Lidl, Marktplaats, Vinted) included
+- Interactive Telegram bot with search functionality
+- Professional Material-UI interface
+
+**Previous Custom Dashboard Replaced:**
+- No more limited custom dashboard
+- Full-featured React application with routing
+- Product search and filtering capabilities
+- User management for admins
+- Real-time notifications view
 
 ## Installation
 
@@ -25,20 +44,21 @@ The installation of this add-on is straightforward and requires you to add this 
 4. The add-on repository will be updated and the add-on will appear in the add-on store.
 5. Install the "Universal Scraper with Telegram" add-on.
 6. Configure the add-on and click "Start".
-7. **Access the dashboard** by clicking "Open Web UI" or check your Home Assistant sidebar.
+7. **Access the interface** by clicking "Open Web UI" or check your Home Assistant sidebar.
 
-## Web Dashboard
+## Web Interface
 
-Once installed and started, the add-on provides a web dashboard accessible through:
+Once installed and started, the add-on provides the complete Universal Scraper web interface:
 
 - **Direct access:** Click "Open Web UI" in the add-on page
-- **Sidebar integration:** The dashboard appears in your Home Assistant sidebar as "Universal Scraper"
+- **Sidebar integration:** The interface appears in your Home Assistant sidebar as "Universal Scraper"
 
-The dashboard allows you to:
-- 📊 View current configuration status
-- 📥 Download database from Azure Blob Storage  
-- 📝 Monitor add-on logs
-- ✅ Verify Telegram bot connectivity
+The interface includes:
+- 🔍 **Product Search & Management** - View and filter scraped products
+- � **Query Management** - Create and manage search queries
+- � **Notifications Dashboard** - View all notifications and alerts  
+- � **User Management** (Admin) - Manage Telegram users
+- 📊 **Real-time Status** - Live scraping status and statistics
 
 ## Configuration
 
@@ -46,7 +66,7 @@ Example configuration:
 
 ```yaml
 telegram_bot_token: "YOUR_BOT_TOKEN"
-scrape_interval_minutes: 1
+scrape_interval_minutes: 60
 database_type: "sqlite"
 admin_token: "YOUR_ADMIN_TOKEN"
 azure_blob_url: "https://yourstorageaccount.blob.core.windows.net/yourcontainer/multiscraper.db?sv=2022-11-02&ss=b&srt=o&sp=r&se=2024-12-31T23:59:59Z&st=2023-01-01T00:00:00Z&spr=https&sig=YourSASSignature"
@@ -59,7 +79,7 @@ db_location: "data"
 | Option | Required | Description | Default | Options |
 |--------|----------|-------------|---------|---------|
 | `telegram_bot_token` | Yes | Your Telegram Bot Token | `""` | - |
-| `scrape_interval_minutes` | Yes | Interval between scrapes in minutes | `1` | - |
+| `scrape_interval_minutes` | Yes | Interval between scrapes in minutes | `60` | - |
 | `database_type` | Yes | Database type (sqlite or mssql) | `"sqlite"` | - |
 | `admin_token` | Yes | Admin token for API authentication | `""` | - |
 | `azure_blob_url` | No | Complete Azure Blob URL with SAS token for database sync | `""` | - |
@@ -68,7 +88,7 @@ db_location: "data"
 
 ### Database Storage Location
 
-**New in v1.0.6**: You can now choose where to store your database:
+You can choose where to store your database:
 
 - **`"data"`** (default): Database stored in add-on data directory (`/data/multiscraper.db`)
   - Pros: Isolated from other add-ons
@@ -80,7 +100,7 @@ db_location: "data"
 
 ### Force Database Download
 
-**New in v1.0.6**: Set `force_db_download: true` to always download the database from Azure Blob Storage on startup, even if the database file already exists. This is useful for:
+Set `force_db_download: true` to always download the database from Azure Blob Storage on startup, even if the database file already exists. This is useful for:
 
 - Ensuring you always have the latest data
 - Testing database sync functionality

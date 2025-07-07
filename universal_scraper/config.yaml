@@ -11,13 +11,16 @@ arch:
   - i386
 startup: application
 boot: auto
+ingress: true
+ingress_port: 3000
+panel_icon: mdi:web-box
+panel_title: "Universal Scraper"
 map:
   - share:rw
 options:
   telegram_bot_token: ""
   scrape_interval_minutes: 1
   database_type: "sqlite"
-  web_url: "http://homeassistant:3000"
   admin_token: ""
   azure_storage_connection_string: ""
   azure_container_name: ""
@@ -26,7 +29,6 @@ schema:
   telegram_bot_token: str
   scrape_interval_minutes: int
   database_type: str
-  web_url: str
   admin_token: str
   azure_storage_connection_string: str
   azure_container_name: str

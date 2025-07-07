@@ -1,10 +1,7 @@
 FROM node:18-alpine
 
 # Install system dependencies and build tools
-RUN apk add --no-cache git jq python3 py3-pip make g++ curl bash
-
-# Install Azure CLI via pip
-RUN pip3 install azure-cli
+RUN apk add --no-cache git jq python3 make g++ curl bash
 
 # Set working directory
 WORKDIR /usr/src/app

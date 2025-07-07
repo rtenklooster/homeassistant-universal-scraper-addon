@@ -7,82 +7,27 @@ CONFIG_PATH=/data/options.json
 TELEGRAM_BOT_TOKEN=$(jq --raw-output '.telegram_bot_token' $CONFIG_PATH)
 SCRAPE_INTERVAL=$(jq --raw-output '.scrape_interval_minutes' $CONFIG_PATH)
 DATABASE_TYPE=$(jq --raw-output '.database_type' $CONFIG_PATH)
-WEB_URL=$(jq --raw-output '.web_url' $CONFIG_PATH)
 ADMIN_TOKEN=$(jq --raw-output '.admin_token' $CONFIG_PATH)
-AZURE_STORAGE_CONNECTION_STRING=$(jq --raw-output '.azure_storage_connection_string' $CONFIG_PATH)
-AZURE_CONTAINER_NAME=$(jq --raw-output '.azure_container_name' $CONFIG_PATH)
-AZURE_BLOB_NAME=$(jq --raw-output '.azure_blob_name' $CONFIG_PATH)
+AZURE_BLOB_URL=$(jq --raw-output '.azure_blob_url' $CONFIG_PATH)
 
 # Download database from Azure Blob Storage if it doesn't exist
-if [ ! -f "/data/multiscraper.db" ] && [ ! -z "$AZURE_STORAGE_CONNECTION_STRING" ] && [ ! -z "$AZURE_CONTAINER_NAME" ] && [ ! -z "$AZURE_BLOB_NAME" ]; then
+if [ ! -f "/data/multiscraper.db" ] && [ ! -z "$AZURE_BLOB_URL" ] && [ "$AZURE_BLOB_URL" != "null" ]; then
     echo "Database not found. Downloading from Azure Blob Storage..."
-    echo "Container: $AZURE_CONTAINER_NAME"
-    echo "Blob: $AZURE_BLOB_NAME"
-    echo "Connection string length: ${#AZURE_STORAGE_CONNECTION_STRING}"
+    echo "Blob URL: ${AZURE_BLOB_URL:0:50}..."
     
-    # Use Node.js with Azure SDK instead of CLI
-    node -e "
-    const { BlobServiceClient } = require('@azure/storage-blob');
-    const fs = require('fs');
-    
-    async function downloadBlob() {
-        try {
-            console.log('Attempting to connect to Azure Blob Storage...');
-            const connectionString = '$AZURE_STORAGE_CONNECTION_STRING';
-            
-            if (!connectionString || connectionString === 'null' || connectionString === '') {
-                console.error('Azure Storage connection string is empty or invalid');
-                console.error('Please configure azure_storage_connection_string in Home Assistant add-on configuration');
-                process.exit(1);
-            }
-            
-            console.log('Connection string format check...');
-            if (!connectionString.includes('DefaultEndpointsProtocol') && !connectionString.includes('BlobEndpoint')) {
-                console.error('Invalid connection string format. Expected format:');
-                console.error('DefaultEndpointsProtocol=https;AccountName=<account>;AccountKey=<key>;EndpointSuffix=core.windows.net');
-                console.error('Or with SAS token:');
-                console.error('BlobEndpoint=https://<account>.blob.core.windows.net/;SharedAccessSignature=<sas-token>');
-                process.exit(1);
-            }
-            
-            const blobServiceClient = BlobServiceClient.fromConnectionString(connectionString);
-            const containerClient = blobServiceClient.getContainerClient('$AZURE_CONTAINER_NAME');
-            const blobClient = containerClient.getBlobClient('$AZURE_BLOB_NAME');
-            
-            console.log('Downloading blob...');
-            const response = await blobClient.download();
-            const stream = fs.createWriteStream('/data/multiscraper.db');
-            response.readableStreamBody.pipe(stream);
-            
-            stream.on('close', () => {
-                console.log('Database downloaded successfully');
-                process.exit(0);
-            });
-            
-            stream.on('error', (err) => {
-                console.error('Failed to write database file:', err);
-                process.exit(1);
-            });
-        } catch (error) {
-            console.error('Failed to download database from Azure Blob Storage:', error.message);
-            console.error('Please check your Azure Storage configuration:');
-            console.error('1. azure_storage_connection_string - Must be a valid Azure Storage connection string');
-            console.error('2. azure_container_name - Must be an existing container name');
-            console.error('3. azure_blob_name - Must be an existing blob file name');
-            process.exit(1);
-        }
-    }
-    
-    downloadBlob();
-    "
+    # Use curl to download the database file
+    if curl -f -o "/data/multiscraper.db" "$AZURE_BLOB_URL"; then
+        echo "Database downloaded successfully from Azure Blob Storage"
+    else
+        echo "Failed to download database from Azure Blob Storage"
+        echo "Please check your azure_blob_url configuration"
+    fi
 else
     if [ -f "/data/multiscraper.db" ]; then
         echo "Database already exists, skipping download"
     else
-        echo "Azure Blob Storage not configured or missing parameters:"
-        echo "- azure_storage_connection_string: ${#AZURE_STORAGE_CONNECTION_STRING} characters"
-        echo "- azure_container_name: $AZURE_CONTAINER_NAME"  
-        echo "- azure_blob_name: $AZURE_BLOB_NAME"
+        echo "Azure Blob Storage not configured or URL is empty"
+        echo "azure_blob_url: $AZURE_BLOB_URL"
         echo "Creating empty database..."
         touch /data/multiscraper.db
     fi
@@ -99,19 +44,21 @@ DATABASE_TYPE=${DATABASE_TYPE}
 DATABASE_PATH=/data/multiscraper.db
 
 # Azure Blob Storage settings
-AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
-AZURE_CONTAINER_NAME=${AZURE_CONTAINER_NAME}
-AZURE_BLOB_NAME=${AZURE_BLOB_NAME}
+AZURE_BLOB_URL=${AZURE_BLOB_URL}
 
 # Admin token
 ADMIN_TOKEN=${ADMIN_TOKEN}
+
+# Network settings for container
+NODE_TLS_REJECT_UNAUTHORIZED=0
 EOL
 
 # Create a simple web interface
 cat > server.js << 'EOF'
 const express = require('express');
 const fs = require('fs');
-const path = require('path');
+const https = require('https');
+const axios = require('axios');
 
 const app = express();
 const PORT = 3000;
@@ -119,6 +66,37 @@ const PORT = 3000;
 // Parse JSON bodies
 app.use(express.json());
 app.use(express.static('public'));
+
+// Test Telegram Bot connectivity
+async function testTelegramBot() {
+    if (!process.env.TELEGRAM_BOT_TOKEN) {
+        return { success: false, message: 'No bot token configured' };
+    }
+    
+    try {
+        const response = await axios.get(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getMe`, {
+            timeout: 10000,
+            httpsAgent: new https.Agent({
+                rejectUnauthorized: false
+            })
+        });
+        
+        if (response.data.ok) {
+            return { 
+                success: true, 
+                message: `Bot connected: @${response.data.result.username}`,
+                botInfo: response.data.result
+            };
+        } else {
+            return { success: false, message: 'Bot API call failed' };
+        }
+    } catch (error) {
+        return { 
+            success: false, 
+            message: `Bot connection failed: ${error.message}` 
+        };
+    }
+}
 
 // Basic HTML interface
 const html = `
@@ -131,10 +109,12 @@ const html = `
         .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .status { padding: 10px; margin: 10px 0; border-radius: 4px; }
         .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
         .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
         .config-item { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 4px; }
-        .btn { background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn { background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
         .btn:hover { background: #0056b3; }
+        .loading { opacity: 0.7; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -147,7 +127,7 @@ const html = `
         
         <h2>📋 Configuration</h2>
         <div class="config-item">
-            <strong>Telegram Bot:</strong> ${process.env.TELEGRAM_BOT_TOKEN ? '✅ Configured' : '❌ Not configured'}
+            <strong>Telegram Bot:</strong> ${process.env.TELEGRAM_BOT_TOKEN ? '🔑 Token configured' : '❌ Not configured'}
         </div>
         <div class="config-item">
             <strong>Scrape Interval:</strong> ${process.env.DEFAULT_SCRAPE_INTERVAL_MINUTES || 'Not set'} minutes
@@ -159,23 +139,66 @@ const html = `
             <strong>Database File:</strong> ${fs.existsSync('/data/multiscraper.db') ? '✅ Found' : '❌ Not found'}
         </div>
         <div class="config-item">
-            <strong>Azure Storage:</strong> ${process.env.AZURE_STORAGE_CONNECTION_STRING ? '✅ Configured' : '❌ Not configured'}
+            <strong>Azure Blob URL:</strong> ${process.env.AZURE_BLOB_URL ? '✅ Configured' : '❌ Not configured'}
+        </div>
+        
+        <h2>🤖 Telegram Bot Status</h2>
+        <div id="bot-status">
+            <div class="status info">Click "Test Bot" to check connection...</div>
         </div>
         
         <h2>📊 Actions</h2>
+        <button class="btn" onclick="testBot()">🤖 Test Telegram Bot</button>
         <button class="btn" onclick="downloadDatabase()">📥 Download Database from Azure</button>
         <button class="btn" onclick="showLogs()">📝 Show Logs</button>
         
         <div id="result" style="margin-top: 20px;"></div>
         
         <script>
+            function testBot() {
+                const btn = event.target;
+                btn.classList.add('loading');
+                btn.textContent = '🔄 Testing...';
+                
+                fetch('/api/test-bot', { method: 'POST' })
+                    .then(response => response.json())
+                    .then(data => {
+                        const statusDiv = document.getElementById('bot-status');
+                        statusDiv.innerHTML = 
+                            '<div class="status ' + (data.success ? 'success' : 'error') + '">' + 
+                            (data.success ? '✅ ' : '❌ ') + data.message + '</div>';
+                        
+                        btn.classList.remove('loading');
+                        btn.textContent = '🤖 Test Telegram Bot';
+                    })
+                    .catch(err => {
+                        document.getElementById('bot-status').innerHTML = 
+                            '<div class="status error">❌ Test failed: ' + err.message + '</div>';
+                        btn.classList.remove('loading');
+                        btn.textContent = '🤖 Test Telegram Bot';
+                    });
+            }
+            
             function downloadDatabase() {
+                const btn = event.target;
+                btn.classList.add('loading');
+                btn.textContent = '📥 Downloading...';
+                
                 document.getElementById('result').innerHTML = '<div class="status info">Downloading database...</div>';
                 fetch('/api/download-db', { method: 'POST' })
                     .then(response => response.json())
                     .then(data => {
                         document.getElementById('result').innerHTML = 
                             '<div class="status ' + (data.success ? 'success' : 'error') + '">' + data.message + '</div>';
+                        
+                        btn.classList.remove('loading');
+                        btn.textContent = '📥 Download Database from Azure';
+                    })
+                    .catch(err => {
+                        document.getElementById('result').innerHTML = 
+                            '<div class="status error">Download failed: ' + err.message + '</div>';
+                        btn.classList.remove('loading');
+                        btn.textContent = '📥 Download Database from Azure';
                     });
             }
             
@@ -193,20 +216,27 @@ app.get('/', (req, res) => {
     res.send(html);
 });
 
+app.post('/api/test-bot', async (req, res) => {
+    const result = await testTelegramBot();
+    res.json(result);
+});
+
 app.post('/api/download-db', async (req, res) => {
     try {
-        if (!process.env.AZURE_STORAGE_CONNECTION_STRING) {
-            return res.json({ success: false, message: 'Azure Storage not configured' });
+        if (!process.env.AZURE_BLOB_URL || process.env.AZURE_BLOB_URL === 'null') {
+            return res.json({ success: false, message: 'Azure Blob URL not configured' });
         }
         
-        const { BlobServiceClient } = require('@azure/storage-blob');
-        const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
-        const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_CONTAINER_NAME);
-        const blobClient = containerClient.getBlobClient(process.env.AZURE_BLOB_NAME);
+        // Use axios to download with proper error handling
+        const response = await axios({
+            method: 'GET',
+            url: process.env.AZURE_BLOB_URL,
+            responseType: 'stream',
+            timeout: 30000
+        });
         
-        const response = await blobClient.download();
         const stream = fs.createWriteStream('/data/multiscraper.db');
-        response.readableStreamBody.pipe(stream);
+        response.data.pipe(stream);
         
         stream.on('close', () => {
             res.json({ success: true, message: 'Database downloaded successfully!' });
@@ -229,7 +259,7 @@ app.get('/api/status', (req, res) => {
             scrapeInterval: process.env.DEFAULT_SCRAPE_INTERVAL_MINUTES,
             databaseType: process.env.DATABASE_TYPE,
             databaseExists: fs.existsSync('/data/multiscraper.db'),
-            azureConfigured: !!process.env.AZURE_STORAGE_CONNECTION_STRING
+            azureConfigured: !!process.env.AZURE_BLOB_URL
         }
     });
 });
@@ -237,6 +267,11 @@ app.get('/api/status', (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
     console.log(\`🚀 Universal Scraper Dashboard running on port \${PORT}\`);
     console.log('📱 Accessible via Home Assistant ingress');
+    
+    // Test bot connection on startup
+    testTelegramBot().then(result => {
+        console.log('🤖 Telegram Bot Test:', result.message);
+    });
 });
 EOF
 

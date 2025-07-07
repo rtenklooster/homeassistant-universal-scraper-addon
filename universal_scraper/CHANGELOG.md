@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.0.3
+
+- **BREAKING:** Simplified Azure Blob configuration - now uses single URL with SAS token instead of connection string + container + blob name
+- Fixed Telegram Bot connectivity issues in container environment
+- Added Telegram Bot connection test in web dashboard
+- Improved network settings for container (NODE_TLS_REJECT_UNAUTHORIZED=0)
+- Better error handling and user feedback in web interface
+- Simplified Azure Blob download using curl instead of Azure SDK
+- Enhanced dashboard with bot testing functionality
+
 ## 1.0.2
 
 - Fixed Docker build issues by removing Azure CLI dependency

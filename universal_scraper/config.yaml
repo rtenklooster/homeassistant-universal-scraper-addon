@@ -1,5 +1,5 @@
 name: "Universal Scraper with Telegram"
-version: "1.0.2"
+version: "1.0.3"
 slug: "universal_scraper"
 description: "Universal scraper with Telegram notifications for Home Assistant"
 url: "https://github.com/rtenklooster/Universal-scraper-with-telegram-notifications"
@@ -22,14 +22,10 @@ options:
   scrape_interval_minutes: 1
   database_type: "sqlite"
   admin_token: ""
-  azure_storage_connection_string: ""
-  azure_container_name: ""
-  azure_blob_name: "multiscraper.db"
+  azure_blob_url: ""
 schema:
   telegram_bot_token: str
   scrape_interval_minutes: int
   database_type: str
   admin_token: str
-  azure_storage_connection_string: str
-  azure_container_name: str
-  azure_blob_name: str
+  azure_blob_url: str

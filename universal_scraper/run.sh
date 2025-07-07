@@ -9,28 +9,64 @@ SCRAPE_INTERVAL=$(jq --raw-output '.scrape_interval_minutes' $CONFIG_PATH)
 DATABASE_TYPE=$(jq --raw-output '.database_type' $CONFIG_PATH)
 ADMIN_TOKEN=$(jq --raw-output '.admin_token' $CONFIG_PATH)
 AZURE_BLOB_URL=$(jq --raw-output '.azure_blob_url' $CONFIG_PATH)
+FORCE_DB_DOWNLOAD=$(jq --raw-output '.force_db_download' $CONFIG_PATH)
+DB_LOCATION=$(jq --raw-output '.db_location' $CONFIG_PATH)
 
-# Download database from Azure Blob Storage if it doesn't exist
-if [ ! -f "/data/multiscraper.db" ] && [ ! -z "$AZURE_BLOB_URL" ] && [ "$AZURE_BLOB_URL" != "null" ]; then
-    echo "Database not found. Downloading from Azure Blob Storage..."
+# Debug configuration values
+echo "=== Configuration Debug ==="
+echo "TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:0:10}..." 
+echo "SCRAPE_INTERVAL: $SCRAPE_INTERVAL"
+echo "DATABASE_TYPE: $DATABASE_TYPE"
+echo "ADMIN_TOKEN: ${ADMIN_TOKEN:0:10}..."
+echo "AZURE_BLOB_URL: ${AZURE_BLOB_URL:0:50}..."
+echo "FORCE_DB_DOWNLOAD: $FORCE_DB_DOWNLOAD"
+echo "DB_LOCATION: $DB_LOCATION"
+echo "=========================="
+
+# Set database path based on location preference
+if [ "$DB_LOCATION" = "config" ]; then
+    DB_PATH="/config/multiscraper.db"
+    echo "Database will be stored in Home Assistant config directory: $DB_PATH"
+else
+    DB_PATH="/data/multiscraper.db"
+    echo "Database will be stored in add-on data directory: $DB_PATH"
+fi
+
+# Ensure the database directory exists
+DB_DIR=$(dirname "$DB_PATH")
+mkdir -p "$DB_DIR"
+
+# Download database from Azure Blob Storage
+download_needed=false
+
+if [ "$FORCE_DB_DOWNLOAD" = "true" ]; then
+    echo "Force download enabled - will download database regardless of existing file"
+    download_needed=true
+elif [ ! -f "$DB_PATH" ]; then
+    echo "Database not found at $DB_PATH - will download if Azure URL is configured"
+    download_needed=true
+else
+    echo "Database already exists at $DB_PATH and force download is disabled"
+fi
+
+if [ "$download_needed" = "true" ] && [ ! -z "$AZURE_BLOB_URL" ] && [ "$AZURE_BLOB_URL" != "null" ] && [ "$AZURE_BLOB_URL" != "" ]; then
+    echo "Downloading database from Azure Blob Storage..."
     echo "Blob URL: ${AZURE_BLOB_URL:0:50}..."
     
     # Use curl to download the database file
-    if curl -f -o "/data/multiscraper.db" "$AZURE_BLOB_URL"; then
-        echo "Database downloaded successfully from Azure Blob Storage"
+    if curl -f -o "$DB_PATH" "$AZURE_BLOB_URL"; then
+        echo "Database downloaded successfully from Azure Blob Storage to $DB_PATH"
     else
         echo "Failed to download database from Azure Blob Storage"
         echo "Please check your azure_blob_url configuration"
+        # Create empty database if download fails
+        touch "$DB_PATH"
     fi
-else
-    if [ -f "/data/multiscraper.db" ]; then
-        echo "Database already exists, skipping download"
-    else
-        echo "Azure Blob Storage not configured or URL is empty"
-        echo "azure_blob_url: $AZURE_BLOB_URL"
-        echo "Creating empty database..."
-        touch /data/multiscraper.db
-    fi
+elif [ "$download_needed" = "true" ]; then
+    echo "Azure Blob Storage not configured or URL is empty"
+    echo "azure_blob_url: $AZURE_BLOB_URL"
+    echo "Creating empty database at $DB_PATH..."
+    touch "$DB_PATH"
 fi
 
 # Create .env file with configuration
@@ -41,13 +77,42 @@ DEFAULT_SCRAPE_INTERVAL_MINUTES=${SCRAPE_INTERVAL}
 
 # Database configuratie
 DATABASE_TYPE=${DATABASE_TYPE}
-DATABASE_PATH=/data/multiscraper.db
+DATABASE_PATH=${DB_PATH}
 
 # Azure Blob Storage settings
 AZURE_BLOB_URL=${AZURE_BLOB_URL}
 
 # Admin token
 ADMIN_TOKEN=${ADMIN_TOKEN}
+
+# Force download setting
+FORCE_DB_DOWNLOAD=${FORCE_DB_DOWNLOAD}
+
+# Database location
+DB_LOCATION=${DB_LOCATION}
+EOL
+
+echo "Environment file created with database path: $DB_PATH"
+
+# Export environment variables for the application
+export TELEGRAM_BOT_TOKEN="$TELEGRAM_BOT_TOKEN"
+export DEFAULT_SCRAPE_INTERVAL_MINUTES="$SCRAPE_INTERVAL"
+export DATABASE_TYPE="$DATABASE_TYPE"
+export DATABASE_PATH="$DB_PATH"
+export AZURE_BLOB_URL="$AZURE_BLOB_URL"
+export ADMIN_TOKEN="$ADMIN_TOKEN"
+export FORCE_DB_DOWNLOAD="$FORCE_DB_DOWNLOAD"
+export DB_LOCATION="$DB_LOCATION"
+
+echo "Environment variables exported"
+
+# Verify Telegram bot token is set
+if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ "$TELEGRAM_BOT_TOKEN" = "null" ] || [ "$TELEGRAM_BOT_TOKEN" = "" ]; then
+    echo "WARNING: Telegram bot token is not set or empty!"
+    echo "Please configure telegram_bot_token in the add-on configuration"
+else
+    echo "Telegram bot token is configured (${#TELEGRAM_BOT_TOKEN} characters)"
+fi
 
 # Network settings for container
 NODE_TLS_REJECT_UNAUTHORIZED=0
@@ -136,7 +201,13 @@ const html = `
             <strong>Database Type:</strong> ${process.env.DATABASE_TYPE || 'Not set'}
         </div>
         <div class="config-item">
-            <strong>Database File:</strong> ${fs.existsSync('/data/multiscraper.db') ? '✅ Found' : '❌ Not found'}
+            <strong>Database File:</strong> ${fs.existsSync(process.env.DATABASE_PATH || '/data/multiscraper.db') ? '✅ Found at ' + (process.env.DATABASE_PATH || '/data/multiscraper.db') : '❌ Not found'}
+        </div>
+        <div class="config-item">
+            <strong>Database Location:</strong> ${process.env.DB_LOCATION === 'config' ? '🏠 Home Assistant Config' : '📁 Add-on Data'} (${process.env.DATABASE_PATH || '/data/multiscraper.db'})
+        </div>
+        <div class="config-item">
+            <strong>Force Download:</strong> ${process.env.FORCE_DB_DOWNLOAD === 'true' ? '✅ Enabled' : '❌ Disabled'}
         </div>
         <div class="config-item">
             <strong>Azure Blob URL:</strong> ${process.env.AZURE_BLOB_URL ? '✅ Configured' : '❌ Not configured'}
@@ -227,6 +298,8 @@ app.post('/api/download-db', async (req, res) => {
             return res.json({ success: false, message: 'Azure Blob URL not configured' });
         }
         
+        const dbPath = process.env.DATABASE_PATH || '/data/multiscraper.db';
+        
         // Use axios to download with proper error handling
         const response = await axios({
             method: 'GET',
@@ -235,11 +308,11 @@ app.post('/api/download-db', async (req, res) => {
             timeout: 30000
         });
         
-        const stream = fs.createWriteStream('/data/multiscraper.db');
+        const stream = fs.createWriteStream(dbPath);
         response.data.pipe(stream);
         
         stream.on('close', () => {
-            res.json({ success: true, message: 'Database downloaded successfully!' });
+            res.json({ success: true, message: `Database downloaded successfully to ${dbPath}!` });
         });
         
         stream.on('error', (err) => {
@@ -252,14 +325,18 @@ app.post('/api/download-db', async (req, res) => {
 });
 
 app.get('/api/status', (req, res) => {
+    const dbPath = process.env.DATABASE_PATH || '/data/multiscraper.db';
     res.json({
         status: 'running',
         config: {
             telegram: !!process.env.TELEGRAM_BOT_TOKEN,
             scrapeInterval: process.env.DEFAULT_SCRAPE_INTERVAL_MINUTES,
             databaseType: process.env.DATABASE_TYPE,
-            databaseExists: fs.existsSync('/data/multiscraper.db'),
-            azureConfigured: !!process.env.AZURE_BLOB_URL
+            databaseExists: fs.existsSync(dbPath),
+            databasePath: dbPath,
+            azureConfigured: !!process.env.AZURE_BLOB_URL,
+            forceDownload: process.env.FORCE_DB_DOWNLOAD === 'true',
+            dbLocation: process.env.DB_LOCATION
         }
     });
 });

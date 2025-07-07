@@ -50,17 +50,41 @@ scrape_interval_minutes: 1
 database_type: "sqlite"
 admin_token: "YOUR_ADMIN_TOKEN"
 azure_blob_url: "https://yourstorageaccount.blob.core.windows.net/yourcontainer/multiscraper.db?sv=2022-11-02&ss=b&srt=o&sp=r&se=2024-12-31T23:59:59Z&st=2023-01-01T00:00:00Z&spr=https&sig=YourSASSignature"
+force_db_download: false
+db_location: "data"
 ```
 
 ### Configuration Options
 
-| Option | Required | Description | Default |
-|--------|----------|-------------|---------|
-| `telegram_bot_token` | Yes | Your Telegram Bot Token | `""` |
-| `scrape_interval_minutes` | Yes | Interval between scrapes in minutes | `1` |
-| `database_type` | Yes | Database type (sqlite or mssql) | `"sqlite"` |
-| `admin_token` | Yes | Admin token for API authentication | `""` |
-| `azure_blob_url` | No | Complete Azure Blob URL with SAS token for database sync | `""` |
+| Option | Required | Description | Default | Options |
+|--------|----------|-------------|---------|---------|
+| `telegram_bot_token` | Yes | Your Telegram Bot Token | `""` | - |
+| `scrape_interval_minutes` | Yes | Interval between scrapes in minutes | `1` | - |
+| `database_type` | Yes | Database type (sqlite or mssql) | `"sqlite"` | - |
+| `admin_token` | Yes | Admin token for API authentication | `""` | - |
+| `azure_blob_url` | No | Complete Azure Blob URL with SAS token for database sync | `""` | - |
+| `force_db_download` | No | Always download database from Azure, even if it exists | `false` | `true`/`false` |
+| `db_location` | No | Where to store the database file | `"data"` | `"data"` or `"config"` |
+
+### Database Storage Location
+
+**New in v1.0.6**: You can now choose where to store your database:
+
+- **`"data"`** (default): Database stored in add-on data directory (`/data/multiscraper.db`)
+  - Pros: Isolated from other add-ons
+  - Cons: Lost when add-on is uninstalled
+
+- **`"config"`**: Database stored in Home Assistant config directory (`/config/multiscraper.db`)
+  - Pros: Persists across add-on reinstalls, accessible to other add-ons
+  - Cons: May clutter your config directory
+
+### Force Database Download
+
+**New in v1.0.6**: Set `force_db_download: true` to always download the database from Azure Blob Storage on startup, even if the database file already exists. This is useful for:
+
+- Ensuring you always have the latest data
+- Testing database sync functionality
+- Recovering from corrupted local databases
 
 ### Azure Blob URL Format
 

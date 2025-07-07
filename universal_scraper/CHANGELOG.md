@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.6
+
+- **NEW FEATURE:** Added `force_db_download` option to always download database from Azure, even if it exists locally
+- **NEW FEATURE:** Added `db_location` option to choose database storage location (`data` or `config`)
+- **DATABASE FLEXIBILITY:** Database can now be stored in Home Assistant config directory (`/config/multiscraper.db`) for persistence across reinstalls
+- **TELEGRAM FIX:** Enhanced Telegram bot token handling with better environment variable export and debugging
+- **DASHBOARD IMPROVEMENTS:** Updated web dashboard to show new configuration options and database location
+- **DEBUGGING:** Added comprehensive configuration debug output to help troubleshoot issues
+- **CONFIG MAPPING:** Added `config:rw` mapping to support database storage in Home Assistant config directory
+- **ENVIRONMENT VARIABLES:** Improved environment variable handling for better container compatibility
+
 ## 1.0.5
 
 - **REBUILD FIX:** Force container rebuild to eliminate cached old versions

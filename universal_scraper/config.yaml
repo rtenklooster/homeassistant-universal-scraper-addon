@@ -2,7 +2,7 @@ name: "Universal Scraper with Telegram"
 version: "1.0.0"
 slug: "universal_scraper"
 description: "Universal scraper with Telegram notifications for Home Assistant"
-url: "https://github.com/yourusername/Universal-scraper-with-telegram-notifications"
+url: "https://github.com/rtenklooster/Universal-scraper-with-telegram-notifications"
 arch:
   - armhf
   - armv7

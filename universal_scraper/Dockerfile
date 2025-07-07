@@ -7,13 +7,13 @@ RUN apk add --no-cache git jq python3 make g++ azure-cli
 WORKDIR /usr/src/app
 
 # Copy application files
-COPY package*.json ./
-COPY tsconfig.json ./
-COPY src/ ./src/
-COPY front-end/ ./front-end/
+COPY ../package*.json ./
+COPY ../tsconfig.json ./
+COPY ../src/ ./src/
+COPY ../front-end/ ./front-end/
 
 # Copy run script
-COPY ha-addon/run.sh ./run.sh
+COPY run.sh ./run.sh
 RUN chmod +x ./run.sh
 
 # Create data directory

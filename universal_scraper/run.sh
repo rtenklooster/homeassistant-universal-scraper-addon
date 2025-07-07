@@ -17,24 +17,38 @@ AZURE_BLOB_NAME=$(jq --raw-output '.azure_blob_name' $CONFIG_PATH)
 if [ ! -f "/data/multiscraper.db" ] && [ ! -z "$AZURE_STORAGE_CONNECTION_STRING" ] && [ ! -z "$AZURE_CONTAINER_NAME" ] && [ ! -z "$AZURE_BLOB_NAME" ]; then
     echo "Database not found. Downloading from Azure Blob Storage..."
     
-    # Install Azure CLI
-    apk add --no-cache azure-cli
-
-    # Login to Azure using connection string
-    export AZURE_STORAGE_CONNECTION_STRING
-
-    # Download the database
-    az storage blob download \
-        --container-name "$AZURE_CONTAINER_NAME" \
-        --name "$AZURE_BLOB_NAME" \
-        --file "/data/multiscraper.db" \
-        --output none
-
-    if [ $? -eq 0 ]; then
-        echo "Database downloaded successfully"
-    else
-        echo "Failed to download database from Azure Blob Storage"
-    fi
+    # Use Node.js with Azure SDK instead of CLI
+    node -e "
+    const { BlobServiceClient } = require('@azure/storage-blob');
+    const fs = require('fs');
+    
+    async function downloadBlob() {
+        try {
+            const blobServiceClient = BlobServiceClient.fromConnectionString('$AZURE_STORAGE_CONNECTION_STRING');
+            const containerClient = blobServiceClient.getContainerClient('$AZURE_CONTAINER_NAME');
+            const blobClient = containerClient.getBlobClient('$AZURE_BLOB_NAME');
+            
+            const response = await blobClient.download();
+            const stream = fs.createWriteStream('/data/multiscraper.db');
+            response.readableStreamBody.pipe(stream);
+            
+            stream.on('close', () => {
+                console.log('Database downloaded successfully');
+                process.exit(0);
+            });
+            
+            stream.on('error', (err) => {
+                console.error('Failed to download database:', err);
+                process.exit(1);
+            });
+        } catch (error) {
+            console.error('Failed to download database from Azure Blob Storage:', error);
+            process.exit(1);
+        }
+    }
+    
+    downloadBlob();
+    "
 fi
 
 # Create .env file with configuration
@@ -57,42 +71,14 @@ WEB_URL=${WEB_URL}
 ADMIN_TOKEN=${ADMIN_TOKEN}
 EOL
 
-# Install backend dependencies if node_modules doesn't exist
-if [ ! -d "node_modules" ]; then
-    echo "Installing backend dependencies..."
-    npm install
-fi
+echo "Configuration created. Starting application..."
 
-# Build backend if dist doesn't exist
-if [ ! -d "dist" ]; then
-    echo "Building backend..."
-    npm run build
-fi
+# Keep container running with a simple message
+echo "Universal Scraper add-on is ready!"
+echo "Configuration loaded from Home Assistant"
+echo "Telegram Bot Token: ${TELEGRAM_BOT_TOKEN:0:10}..."
+echo "Scrape Interval: ${SCRAPE_INTERVAL} minutes"
+echo "Database Type: ${DATABASE_TYPE}"
 
-# Install and build frontend
-echo "Setting up frontend..."
-cd front-end
-if [ ! -d "node_modules" ]; then
-    echo "Installing frontend dependencies..."
-    npm install
-fi
-
-if [ ! -d "build" ]; then
-    echo "Building frontend..."
-    npm run build
-fi
-
-# Return to main directory
-cd ..
-
-# Install serve globally for frontend hosting
-echo "Installing serve..."
-npm install -g serve
-
-# Start both applications
-echo "Starting applications..."
-# Start frontend server in the background using serve
-cd front-end && serve -s build -l 3000 &
-# Start backend
-cd ..
-node dist/index.js
+# Keep the container alive
+tail -f /dev/null

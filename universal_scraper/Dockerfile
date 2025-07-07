@@ -1,7 +1,7 @@
 FROM node:18-alpine
 
-# Install system dependencies and build tools
-RUN apk add --no-cache git jq python3 make g++ curl bash
+# Install system dependencies  
+RUN apk add --no-cache jq curl bash
 
 # Set working directory
 WORKDIR /usr/src/app

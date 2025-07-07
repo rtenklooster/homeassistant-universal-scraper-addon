@@ -1,16 +1,19 @@
 FROM node:18-alpine
 
-# Install dependencies and build tools
-RUN apk add --no-cache git jq python3 make g++ azure-cli
+# Install system dependencies and build tools
+RUN apk add --no-cache git jq python3 py3-pip make g++ curl bash
+
+# Install Azure CLI via pip
+RUN pip3 install azure-cli
 
 # Set working directory
 WORKDIR /usr/src/app
 
 # Copy application files
-COPY ../package*.json ./
-COPY ../tsconfig.json ./
-COPY ../src/ ./src/
-COPY ../front-end/ ./front-end/
+COPY package*.json ./
+
+# Install npm dependencies
+RUN npm install
 
 # Copy run script
 COPY run.sh ./run.sh

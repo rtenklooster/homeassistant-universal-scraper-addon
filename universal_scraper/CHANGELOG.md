@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.4
+
+- **CRITICAL FIX:** Fixed JavaScript syntax error in server.js causing container crashes
+- Fixed template literal escaping issues in shell script
+- Removed references to old Azure connection string configuration
+- Fixed broken template literals that caused "Invalid or unexpected token" errors
+- Properly escaped heredoc delimiters in run.sh script
+- Ensured proper Node.js syntax for console.log statements
+
 ## 1.0.3
 
 - **BREAKING:** Simplified Azure Blob configuration - now uses single URL with SAS token instead of connection string + container + blob name

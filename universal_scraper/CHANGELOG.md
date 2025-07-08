@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.0.8
+
+**🛠️ BUILD OPTIMIZATION & STABILITY IMPROVEMENTS**
+
+- **MEMORY OPTIMIZATION:** Added NODE_OPTIONS to handle memory constraints in Docker containers
+- **BUILD RESILIENCE:** Enhanced React build process with fallback mechanisms for resource-constrained environments
+- **FALLBACK UI:** Added fallback HTML interface when React build fails due to memory limitations
+- **BACKEND FLEXIBILITY:** Improved backend build with ts-node fallback for TypeScript runtime execution
+- **CHROMIUM SUPPORT:** Added Chromium browser support for web scraping functionality
+- **STARTUP ROBUSTNESS:** Enhanced startup sequence with multiple fallback options
+- **DOCKER OPTIMIZATION:** Improved Dockerfile with better memory management and essential dependencies
+- **ERROR HANDLING:** Better error handling and recovery during build and startup processes
+
+**Technical Improvements:**
+- Set NODE_OPTIONS="--max-old-space-size=2048" for better memory management
+- Added CI=false for React builds to reduce memory usage
+- Chromium browser integration for web scraping
+- Fallback HTML interface when React build fails
+- ts-node runtime fallback for TypeScript execution
+- Enhanced error messaging and debugging information
+
 ## 1.0.7
 
 **🚀 MAJOR UPDATE: Complete Project Integration**

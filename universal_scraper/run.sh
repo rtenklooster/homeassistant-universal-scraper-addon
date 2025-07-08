@@ -39,14 +39,14 @@ else
 fi
 
 # Set database path based on location preference
-if [ "$DB_LOCATION" = "config" ]; then
-    DB_PATH="/config/multiscraper.db"
-    DB_DIR="/config"
-    echo "📁 Database will be stored in Home Assistant config directory: $DB_PATH"
-else
+if [ "$DB_LOCATION" = "data" ]; then
     DB_PATH="/data/multiscraper.db"
     DB_DIR="/data"
     echo "📁 Database will be stored in add-on data directory: $DB_PATH"
+else
+    DB_PATH="/config/multiscraper.db"
+    DB_DIR="/config"
+    echo "📁 Database will be stored in Home Assistant config directory: $DB_PATH"
 fi
 
 # Ensure the database directory exists
@@ -68,6 +68,12 @@ fi
 if [ "$download_needed" = "true" ] && [ ! -z "$AZURE_BLOB_URL" ] && [ "$AZURE_BLOB_URL" != "null" ] && [ "$AZURE_BLOB_URL" != "" ]; then
     echo "📥 Downloading database from Azure Blob Storage..."
     echo "Blob URL: ${AZURE_BLOB_URL:0:50}..."
+    
+    # Remove existing database if it exists to prevent conflicts
+    if [ -f "$DB_PATH" ]; then
+        echo "🗑️ Removing existing database before download..."
+        rm "$DB_PATH"
+    fi
     
     if curl -f -o "$DB_PATH" "$AZURE_BLOB_URL"; then
         echo "✅ Database downloaded successfully from Azure Blob Storage to $DB_PATH"
@@ -244,6 +250,20 @@ fi
 
 # Ensure the logs directory exists
 mkdir -p logs
+
+# Check database integrity and fix if needed
+if [ -f "$DB_PATH" ]; then
+    echo "🔍 Checking database integrity..."
+    
+    # Simple SQLite integrity check
+    if ! sqlite3 "$DB_PATH" "PRAGMA integrity_check;" > /dev/null 2>&1; then
+        echo "⚠️ Database integrity check failed - creating backup and starting fresh"
+        mv "$DB_PATH" "${DB_PATH}.backup.$(date +%Y%m%d_%H%M%S)"
+        echo "📦 Old database backed up with timestamp"
+    else
+        echo "✅ Database integrity check passed"
+    fi
+fi
 
 # Patch the server to use PORT environment variable for Home Assistant ingress
 echo "🔧 Patching server to use PORT environment variable..."

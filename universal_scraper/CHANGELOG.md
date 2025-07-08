@@ -1,5 +1,41 @@
 # Changelog
 
+## 1.0.9
+
+**🏠 DATABASE LOCATION & INTEGRITY IMPROVEMENTS**
+
+- **DEFAULT CONFIG LOCATION:** Database now defaults to `/config` directory (same as configuration.yaml)
+- **DATABASE PERSISTENCE:** Database survives add-on updates and reinstalls when stored in config directory
+- **DATABASE INTEGRITY CHECK:** Added SQLite integrity validation before startup
+- **AUTOMATIC BACKUP:** Corrupted databases are automatically backed up with timestamp
+- **IMPROVED LOGIC:** Fixed database location logic to default to config directory
+- **SQLITE TOOLS:** Added SQLite tools to Docker container for database operations
+
+**Database Features:**
+- Default location: `/config/multiscraper.db` (persistent across updates)
+- Alternative location: `/data/multiscraper.db` (if specifically configured)
+- Automatic integrity checks on startup
+- Corrupted database backup and recovery
+- Compatible with Home Assistant configuration management
+
+## 1.0.8hangelog
+
+## 1.0.9
+
+**📁 DATABASE PERSISTENCE IMPROVEMENT**
+
+- **DEFAULT DATABASE LOCATION:** Changed default database location from `data` to `config`
+- **PERSISTENT STORAGE:** Database now stored in Home Assistant config directory by default
+- **DATA SAFETY:** Database persists across add-on updates and reinstalls
+- **CONFIGURATION CONSISTENCY:** Database stored alongside configuration.yaml and automations.yaml
+- **USER EXPERIENCE:** No more data loss when updating the add-on
+
+**Benefits:**
+- Database is now stored in `/config/multiscraper.db` by default
+- Survives add-on updates, container rebuilds, and Home Assistant restarts
+- Consistent with Home Assistant best practices for persistent data
+- Easy backup as part of Home Assistant configuration backup
+
 ## 1.0.8
 
 **🛠️ BUILD OPTIMIZATION & STABILITY IMPROVEMENTS**

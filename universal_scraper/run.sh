@@ -16,7 +16,6 @@ DATABASE_TYPE=$(jq --raw-output '.database_type' $CONFIG_PATH)
 ADMIN_TOKEN=$(jq --raw-output '.admin_token' $CONFIG_PATH)
 AZURE_BLOB_URL=$(jq --raw-output '.azure_blob_url' $CONFIG_PATH)
 FORCE_DB_DOWNLOAD=$(jq --raw-output '.force_db_download' $CONFIG_PATH)
-DB_LOCATION=$(jq --raw-output '.db_location' $CONFIG_PATH)
 
 # Debug configuration values
 echo "=== Configuration Debug ==="
@@ -26,7 +25,6 @@ echo "DATABASE_TYPE: $DATABASE_TYPE"
 echo "ADMIN_TOKEN: ${ADMIN_TOKEN:0:10}..."
 echo "AZURE_BLOB_URL: ${AZURE_BLOB_URL:0:50}..."
 echo "FORCE_DB_DOWNLOAD: $FORCE_DB_DOWNLOAD"
-echo "DB_LOCATION: $DB_LOCATION"
 echo "=========================="
 
 # Verify Telegram bot token is set
@@ -38,16 +36,10 @@ else
     echo "✅ Telegram bot token is configured (${#TELEGRAM_BOT_TOKEN} characters)"
 fi
 
-# Set database path based on location preference
-if [ "$DB_LOCATION" = "data" ]; then
-    DB_PATH="/data/multiscraper.db"
-    DB_DIR="/data"
-    echo "📁 Database will be stored in add-on data directory: $DB_PATH"
-else
-    DB_PATH="/config/multiscraper.db"
-    DB_DIR="/config"
-    echo "📁 Database will be stored in Home Assistant config directory: $DB_PATH"
-fi
+# Database will always be stored in Home Assistant config directory
+DB_PATH="/config/multiscraper.db"
+DB_DIR="/config"
+echo "📁 Database will be stored in Home Assistant config directory: $DB_PATH"
 
 # Ensure the database directory exists
 mkdir -p "$DB_DIR"
@@ -137,7 +129,6 @@ PROXY_URL=
 # Additional Add-on specific settings
 AZURE_BLOB_URL=${AZURE_BLOB_URL}
 FORCE_DB_DOWNLOAD=${FORCE_DB_DOWNLOAD}
-DB_LOCATION=${DB_LOCATION}
 
 # Server Configuration - Use port 3000 for Home Assistant ingress
 PORT=3000
@@ -308,7 +299,6 @@ export USE_ROTATING_PROXY="false"
 export PROXY_URL=""
 export AZURE_BLOB_URL="$AZURE_BLOB_URL"
 export FORCE_DB_DOWNLOAD="$FORCE_DB_DOWNLOAD"
-export DB_LOCATION="$DB_LOCATION"
 export PORT="3000"
 export NODE_ENV="production"
 

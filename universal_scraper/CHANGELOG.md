@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.1.0
+
+**🎯 SIMPLIFIED CONFIGURATION & PERSISTENT DATABASE**
+
+- **SIMPLIFIED SETUP:** Removed `db_location` option - database always stored in `/config` directory
+- **PERSISTENT DATABASE:** Database automatically persists across add-on updates and reinstalls
+- **NO MORE CHOICES:** Eliminates configuration confusion - database always in the right place
+- **HOME ASSISTANT INTEGRATION:** Database stored alongside configuration.yaml and automations.yaml
+- **BACKUP FRIENDLY:** Database included in Home Assistant configuration backups automatically
+
+**What changed:**
+- Removed `db_location` configuration option from settings
+- Database fixed to `/config/multiscraper.db` location
+- Simplified startup script logic
+- Cleaner configuration interface
+- Better Home Assistant integration
+
+**Benefits:**
+- No more data loss from wrong database location choices
+- Consistent with Home Assistant best practices
+- Easier setup for new users
+- Database automatically backed up with Home Assistant config
+
 ## 1.0.9
 
 **🏠 DATABASE LOCATION & INTEGRITY IMPROVEMENTS**

@@ -2,7 +2,7 @@ FROM node:18-alpine
 
 # Build time cache buster
 ARG BUILD_DATE
-RUN echo "Build date: $BUILD_DATE v1.0.9"
+RUN echo "Build date: $BUILD_DATE v1.1.0"
 
 # Install system dependencies including git for cloning the project
 RUN apk add --no-cache jq curl bash git python3 make g++ chromium sqlite
